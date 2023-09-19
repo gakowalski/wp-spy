@@ -114,10 +114,22 @@ for ($i = $post_id_first; $i <= $post_id_latest; $i++) {
     if ($http_code != 404) {
         // extract URL from HTML from link rel="canonical"
         preg_match('/<link rel="canonical" href="(.*)" \/>/', $response, $matches);
+        $type = 'canonical';
+        
+        // if no canonical URL found, extract URL from HTML from meta property="og:url"
+        if (empty($matches[1])) {
+            preg_match('/<meta property="og:url" content="(.*)" \/>/', $response, $matches);
+            $type = 'og:url';
+        }
+
         if (!empty($matches[1])) {
             $url = $matches[1];
-            echo "Canonical URL found: " . $url . "\n";
-            $posts[$i] = $url;
+            echo "$type URL found: " . $url . "\n";
+            $posts[] = [
+                'id' => $i,
+                'url' => $url,
+                'type' => $type,
+            ];
         }
     }
 }
@@ -132,10 +144,12 @@ $fh = fopen($target_filename . '.csv', 'w');
 
 // print all posts
 echo "Found $found_posts_count posts:\n";
-foreach ($posts as $post_id => $post_url) {
-    echo "$post_id;$post_url\n";
-    // write to file $target_filename.csv
-    fwrite($fh, "$post_id;$post_url\n");
+fputcsv($fh, ['id', 'url', 'type']);
+foreach ($posts as $post) {
+    fputcsv($fh, $post);
+
+    // also fputcsv to stdout
+    fputcsv(STDOUT, $post);
 }
 
 fclose($fh);
