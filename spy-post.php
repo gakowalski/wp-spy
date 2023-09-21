@@ -261,7 +261,7 @@ function combine_info_arrays($info, $new_info) {
 
     // find keys that are in $new_info but not in $info and add them to $info
     foreach ($new_info as $key => $value) {
-        if (!isset($info[$key])) {
+        if (!isset($info[$key]) || $info[$key] == 'Not found') {
             $info[$key] = $value;
         }
     }
