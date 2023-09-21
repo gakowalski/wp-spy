@@ -74,7 +74,7 @@ function analyze_html($html) {
             'regex' => '/<meta property="og:type" content="(.*)" \/>/',
             'matches_index' => 1,
         ],
-        'Post title' => [
+        'Title' => [
             'regex' => '/<meta property="og:title" content="(.*)" \/>/',
             'matches_index' => 1,
         ],
@@ -317,4 +317,33 @@ foreach ($html_analysis_results as $key => $value) {
     } else {
         fputcsv(STDOUT, [$key, $value]);
     }
+}
+
+// get Internet Archive timemap data
+// https://web.archive.org/web/timemap/json?url=https%3A%2F%2Fexample.com%2F
+$ia_timemap_url = 'https://web.archive.org/web/timemap/json?url=' . urlencode($target);
+$ia_timemap_json = file_get_contents($ia_timemap_url);
+$ia_timemap = json_decode($ia_timemap_json, true);  
+
+// if no timemap found, exit
+if (empty($ia_timemap)) {
+    echo "No Internet Archive timemap found\n";
+    exit;
+} else {
+    // remove first timestamp
+    array_shift($ia_timemap);
+}
+
+// loop over timemap and get all timestamps, ignore first timestamp
+$ia_timestamps = [];
+foreach ($ia_timemap as $ia_timemap_entry) {
+    $ia_timestamps[] = $ia_timemap_entry[1];
+}
+
+// for each timestamp generate URL to archived post
+// echo to STDOUT using fputcsv
+fputcsv(STDOUT, ['Timestamp', 'URL']);
+foreach ($ia_timestamps as $ia_timestamp) {
+    $ia_url = 'https://web.archive.org/web/' . $ia_timestamp . '/' . $target;
+    fputcsv(STDOUT, [$ia_timestamp, $ia_url]);
 }

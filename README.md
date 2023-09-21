@@ -6,7 +6,7 @@ Four simple scripts:
 1. Enumerate all WP posts by their ID and get canonical links.
 2. Get all authors from Wordpress REST API
 3. Guess plugins from REST API endpoints and scan for available post types
-4. Extract info from single post or page
+4. Extract info from single post or page, check Internet Archive for archival records
 
 ## Usage
 
