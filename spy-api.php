@@ -125,14 +125,23 @@ foreach ($types as $type) {
         if (!empty($rest_data)) {
             if (is_array($rest_data)) {
                 $rest_count = count($rest_data);
+
+                // check if $http_response_header contains header 'X-WP-Total' and use it as count
+                foreach ($http_response_header as $header) {
+                    $header_lowercase = strtolower($header);
+                    $pattern_lowercase = strtolower('X-WP-Total:');
+                    if (str_starts_with($header_lowercase, $pattern_lowercase)) {
+                        $rest_count = str_replace("$pattern_lowercase ", '', $header_lowercase);
+                    }
+                }
             } else {
-                $rest_count = 1;
+                $rest_count = 'not an array';
             }
         } else {
-            $rest_count = 0;
+            $rest_count = 'no data';
         }
     } else {
-        $rest_count = 'N/A';
+        $rest_count = 'requires login';
     }
 
     fputcsv(STDOUT, ['Type', "$type_name ($type_name_2)", $type_slug, $rest_count, $rest_url]);
