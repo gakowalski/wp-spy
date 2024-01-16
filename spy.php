@@ -25,7 +25,18 @@ if (substr($target, -1) != '/') {
     $target .= '/';
 }
 
-$frontpage_html = file_get_contents($target);
+// prepare context for file_get_contents so it does not verify SSL certificate
+$opts = array(
+    'ssl' => array(
+        'verify_peer' => false,
+        'verify_peer_name' => false,
+    ),
+);
+
+// get context
+$context = stream_context_create($opts);
+
+$frontpage_html = file_get_contents($target, context: $context);
 
 // if no HTML found, exit
 if (empty($frontpage_html)) {
@@ -50,7 +61,7 @@ if (empty($matches[1])) {
 $rss_url = $matches[1];
 
 // get RSS feed content
-$rss_xml = file_get_contents($rss_url);
+$rss_xml = file_get_contents($rss_url, context: $context);
 
 // retrieve link in <guid> tag
 // it is in the form of <guid isPermaLink="false">http://www.example.com/?p=123</guid>
@@ -101,8 +112,8 @@ for ($i = $post_id_first; $i <= $post_id_latest; $i++) {
     // set max redirects
     curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
     // set cookie file
-    curl_setopt($ch, CURLOPT_COOKIEJAR, 'cookie.txt');
-    curl_setopt($ch, CURLOPT_COOKIEFILE, 'cookie.txt');
+    //curl_setopt($ch, CURLOPT_COOKIEJAR, 'cookie.txt');
+    //curl_setopt($ch, CURLOPT_COOKIEFILE, 'cookie.txt');
 
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);

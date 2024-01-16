@@ -18,7 +18,18 @@ if (substr($target, -1) != '/') {
     $target .= '/';
 }
 
-$frontpage_html = file_get_contents($target);
+// prepare context for file_get_contents so it does not verify SSL certificate
+$opts = array(
+    'ssl' => array(
+        'verify_peer' => false,
+        'verify_peer_name' => false,
+    ),
+);
+
+// get context
+$context = stream_context_create($opts);
+
+$frontpage_html = file_get_contents($target, context: $context);
 
 // if no HTML found, exit
 if (empty($frontpage_html)) {
@@ -46,7 +57,7 @@ $api_url = $matches[1] . 'wp/v2/users';
 */
 
 $api_url = $target . 'wp-json/wp/v2/users';
-$api_json = file_get_contents($api_url);
+$api_json = file_get_contents($api_url, context: $context);
 
 // if no JSON data found, exit
 if (empty($api_json)) {
