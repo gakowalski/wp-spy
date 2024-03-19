@@ -15,6 +15,13 @@ if (empty($argv[2])) {
     $post_id_first = $argv[2];
 }
 
+// if third argument does not contain starting ID, assume it is 1
+if (empty($argv[3])) {
+    $post_id_last = null;
+} else {
+    $post_id_last = $argv[3];
+}
+
 // if target URL does not contain http:// or https://, add https://
 if (strpos($target, 'http://') === false && strpos($target, 'https://') === false) {
     $target = 'https://' . $target;
@@ -36,59 +43,74 @@ $opts = array(
 // get context
 $context = stream_context_create($opts);
 
-$frontpage_html = file_get_contents($target, context: $context);
+if ($post_id_last === null) {
+    $frontpage_html = file_get_contents($target, context: $context);
 
-// if no HTML found, exit
-if (empty($frontpage_html)) {
-    echo "No HTML found\n";
-    exit;
-}
+    // if no HTML found, exit
+    if (empty($frontpage_html)) {
+        echo "No HTML found\n";
+        exit;
+    }
 
-// get link to RSS feed, extract it from the $frontpage_html
-// it is in the form of <link rel="alternate" type="application/rss+xml" title="RSS" href="http://www.example.com/rss.xml" />
-// exztract the href part using regular expressions
-preg_match('/<link rel="alternate" type="application\/rss\+xml" title=".*" href="(.*)" \/>/', $frontpage_html, $matches);
+    // get link to RSS feed, extract it from the $frontpage_html
+    // it is in the form of <link rel="alternate" type="application/rss+xml" title="RSS" href="http://www.example.com/rss.xml" />
+    // exztract the href part using regular expressions
+    preg_match('/<link rel="alternate" type="application\/rss\+xml" title=".*" href="(.*)" \/>/', $frontpage_html, $matches);
 
-// if no RSS feed found, exit
-if (empty($matches[1])) {
-    echo "No RSS feed found\n";
-    exit;
-} else {
-    echo "RSS feed found: " . $matches[1] . "\n";
-}
+    // if no RSS feed found, exit
+    if (empty($matches[1])) {
+        echo "No RSS feed found, trying to guess one\n";
 
-// get RSS feed URL
-$rss_url = $matches[1];
+        $rss_url = strtr("$target/feed/", [ '//' => '/']);
+        echo "Trying " . $rss_url . "\n";
+    } else {
+        echo "RSS feed found: " . $matches[1] . "\n";
 
-// get RSS feed content
-$rss_xml = file_get_contents($rss_url, context: $context);
+        // get RSS feed URL
+        $rss_url = $matches[1];
+    }
 
-// retrieve link in <guid> tag
-// it is in the form of <guid isPermaLink="false">http://www.example.com/?p=123</guid>
-// extract the URL part using regular expressions
-preg_match('/<guid isPermaLink="false">(.*)<\/guid>/', $rss_xml, $matches);
 
-// if no link found, exit
-if (empty($matches[1])) {
-    echo "No GUID link found\n";
-    exit;
-} else {
-    echo "GUID link found: " . $matches[1] . "\n";
-}
 
-// extract post ID from the link
-preg_match('/\?p=(.*)/', $matches[1], $matches);
+    // get RSS feed content
+    $rss_xml = file_get_contents($rss_url, context: $context);
 
-// if no post ID found, exit
-if (empty($matches[1])) {
-    echo "No post ID found\n";
-    exit;
-} else {
-    echo "Post ID found: " . $matches[1] . "\n";
+    if (empty($rss_xml)) {
+        echo "No RSS XML found\n";
+        exit;
+    }
+
+    // retrieve link in <guid> tag
+    // it is in the form of <guid isPermaLink="false">http://www.example.com/?p=123</guid>
+    // extract the URL part using regular expressions
+    preg_match('/<guid isPermaLink="false">(.*)<\/guid>/', $rss_xml, $matches);
+
+    // if no link found, exit
+    if (empty($matches[1])) {
+        echo "No GUID link found\n";
+        exit;
+    } else {
+        echo "GUID link found: " . $matches[1] . "\n";
+    }
+
+    // extract post ID from the link
+    preg_match('/\?p=(.*)/', $matches[1], $matches);
+
+    // if no post ID found, exit
+    if (empty($matches[1])) {
+        echo "No post ID found\n";
+        exit;
+    } else {
+        echo "Post ID found: " . $matches[1] . "\n";
+    }
 }
 
 // get post ID
-$post_id_latest = $matches[1];
+if ($post_id_last === null) {
+    $post_id_latest = $matches[1];
+} else {
+    $post_id_latest = $post_id_last;
+}
 
 // get all posts from 1 do $post_id_latest, follow all redirections
 // if you get a 404, ignore it

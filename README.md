@@ -22,3 +22,9 @@ or
 ```bash
 php spy.php some_wp_site.com
 ```
+
+You can skip RSS analysis step by providing start and end post ID to scrap:
+
+```bash
+php spy.php some_wp_site.com 1 12345
+```
